@@ -12,7 +12,6 @@ import com.example.kotlin.examenmoviles.framework.adapters.CovidAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -41,7 +40,7 @@ class CovidActivity : AppCompatActivity() {
 
     private fun getRetrofit(): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://api.api-ninjas.com/v1/")
+            .baseUrl("https://api.api-ninjas.com/v1/") // Asegúrate de que termina con '/'
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
@@ -49,24 +48,39 @@ class CovidActivity : AppCompatActivity() {
     private fun fetchCovidData() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val call: Response<List<CountryCovidData>> = getRetrofit()
-                    .create(CovidApiService::class.java)
-                    .getCovidData("https://api.api-ninjas.com/v1/covid19")
+                Log.d("MainCovidActivity", "Iniciando solicitud a la API")
+                val covidApiService = getRetrofit().create(CovidApiService::class.java)
+                Log.d("MainCovidActivity", "CovidApiService creado: $covidApiService")
 
-                val covidDataList: List<CountryCovidData>? = call.body()
+                // Pasa "Mexico" como parámetro al método getCovidData()
+                val response = covidApiService.getCovidData("Mexico")
+                Log.d("MainCovidActivity", "Respuesta recibida: $response")
+
                 runOnUiThread {
-                    if (call.isSuccessful && covidDataList != null) {
-                        countryCovidDataList.clear()
-                        countryCovidDataList.addAll(covidDataList)
-                        adapter.notifyDataSetChanged()
+                    if (response.isSuccessful) {
+                        val covidDataList = response.body()
+                        Log.d("MainCovidActivity", "Datos obtenidos: $covidDataList")
+
+                        if (covidDataList != null && covidDataList.isNotEmpty()) {
+                            countryCovidDataList.clear()
+                            countryCovidDataList.addAll(covidDataList)
+                            adapter.notifyDataSetChanged()
+                            Log.d("MainCovidActivity", "Datos cargados en RecyclerView")
+                        } else {
+                            Log.d("MainCovidActivity", "La lista de datos está vacía o es nula")
+                            showError()
+                        }
                     } else {
+                        Log.e("MainCovidActivity", "Error en la respuesta: código ${response.code()}, mensaje ${response.message()}")
+                        val errorBody = response.errorBody()?.string()
+                        Log.e("MainCovidActivity", "Cuerpo del error: $errorBody")
                         showError()
                     }
                 }
             } catch (e: Exception) {
+                Log.e("MainCovidActivity", "Error al obtener los datos", e)
                 runOnUiThread {
                     showError()
-                    e.printStackTrace()
                 }
             }
         }
