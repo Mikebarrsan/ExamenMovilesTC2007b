@@ -52,7 +52,6 @@ class CovidActivity : AppCompatActivity() {
                 val covidApiService = getRetrofit().create(CovidApiService::class.java)
                 Log.d("MainCovidActivity", "CovidApiService creado: $covidApiService")
 
-                // Pasa "Mexico" como parámetro al método getCovidData()
                 val response = covidApiService.getCovidData("Mexico")
                 Log.d("MainCovidActivity", "Respuesta recibida: $response")
 
@@ -62,8 +61,23 @@ class CovidActivity : AppCompatActivity() {
                         Log.d("MainCovidActivity", "Datos obtenidos: $covidDataList")
 
                         if (covidDataList != null && covidDataList.isNotEmpty()) {
+                            // Convierte el mapa `cases` en una lista de pares fecha-datos
+                            val caseList = covidDataList.flatMap { countryData ->
+                                countryData.cases.map { (date, caseData) ->
+                                    Pair(date, caseData)
+                                }
+                            }
+
                             countryCovidDataList.clear()
-                            countryCovidDataList.addAll(covidDataList)
+                            countryCovidDataList.addAll(caseList.map { (date, caseData) ->
+                                // Crea un nuevo objeto para cada fecha
+                                CountryCovidData(
+                                    country = covidDataList[0].country,
+                                    region = covidDataList[0].region,
+                                    cases = mapOf(date to caseData)
+                                )
+                            })
+
                             adapter.notifyDataSetChanged()
                             Log.d("MainCovidActivity", "Datos cargados en RecyclerView")
                         } else {
@@ -85,6 +99,7 @@ class CovidActivity : AppCompatActivity() {
             }
         }
     }
+
 
     private fun showError() {
         Toast.makeText(this, "Ha ocurrido un error al obtener los datos", Toast.LENGTH_SHORT).show()

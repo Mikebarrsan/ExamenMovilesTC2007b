@@ -10,15 +10,16 @@ class CovidViewHolder(view: View) : RecyclerView.ViewHolder(view) {
     private val binding = ItemCovidBinding.bind(view)
 
     fun bind(data: CountryCovidData) {
-        // Asignar el nombre del país
+        // Muestra el nombre del país
         binding.tvCountryName.text = data.country
 
-        // Mostrar los casos totales (última fecha registrada)
-        val latestDate = data.cases.keys.lastOrNull()
-        val latestCaseData = latestDate?.let { data.cases[it] }
-        binding.tvTotalCases.text = latestCaseData?.total?.toString() ?: "N/A"
+        // Extrae la única entrada del mapa `cases`
+        val caseEntry = data.cases.entries.first()
+        val date = caseEntry.key
+        val caseData = caseEntry.value
 
-        // Mostrar los nuevos casos (última fecha registrada)
-        binding.tvNewCases.text = latestCaseData?.newCases?.toString() ?: "N/A"
+        // Muestra los datos de la fecha y casos
+        binding.tvTotalCases.text = "Fecha: $date\nTotal casos: ${caseData.total}"
+        binding.tvNewCases.text = "Nuevos casos: ${caseData.newCases}"
     }
 }
