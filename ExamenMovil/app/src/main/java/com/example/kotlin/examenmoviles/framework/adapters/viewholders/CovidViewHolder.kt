@@ -15,11 +15,11 @@ class CovidViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
         // Extrae la única entrada del mapa `cases`
         val caseEntry = data.cases.entries.first()
-        val date = caseEntry.key
+        val month = caseEntry.key // YYYY-MM
         val caseData = caseEntry.value
 
-        // Muestra los datos de la fecha y casos
-        binding.tvTotalCases.text = "Fecha: $date\nTotal casos: ${caseData.total}"
+        // Muestra los datos del mes y casos
+        binding.tvTotalCases.text = "Mes: $month\nCasos totales (incremento): ${caseData.total}"
         binding.tvNewCases.text = "Nuevos casos: ${caseData.newCases}"
     }
 }

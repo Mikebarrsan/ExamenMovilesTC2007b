@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.kotlin.examenmoviles.data.network.CovidApiService
+import com.example.kotlin.examenmoviles.data.network.model.CaseData
 import com.example.kotlin.examenmoviles.data.network.model.CountryCovidData
 import com.example.kotlin.examenmoviles.databinding.ActivityMainCovidBinding
 import com.example.kotlin.examenmoviles.framework.adapters.CovidAdapter
@@ -61,23 +62,34 @@ class CovidActivity : AppCompatActivity() {
                         Log.d("MainCovidActivity", "Datos obtenidos: $covidDataList")
 
                         if (covidDataList != null && covidDataList.isNotEmpty()) {
-                            // Convierte el mapa `cases` en una lista de pares fecha-datos
-                            val caseList = covidDataList.flatMap { countryData ->
+                            // Agrupa los datos por mes y calcula correctamente los totales
+                            val monthlyData = covidDataList.flatMap { countryData ->
                                 countryData.cases.map { (date, caseData) ->
                                     Pair(date, caseData)
                                 }
-                            }
+                            }.groupBy { (date, _) ->
+                                // Agrupa por año-mes (YYYY-MM)
+                                date.substring(0, 7) // Formato: "YYYY-MM"
+                            }.map { (month, cases) ->
+                                // Ordena las fechas del mes
+                                val sortedCases = cases.sortedBy { it.first }
 
-                            countryCovidDataList.clear()
-                            countryCovidDataList.addAll(caseList.map { (date, caseData) ->
-                                // Crea un nuevo objeto para cada fecha
+                                // Casos totales: diferencia entre el último día y el primer día del mes
+                                val totalCases = sortedCases.last().second.total - sortedCases.first().second.total
+
+                                // Nuevos casos: suma de los "newCases" reportados durante el mes
+                                val newCases = sortedCases.sumOf { it.second.newCases }
+
+                                // Crea un objeto `CountryCovidData` para cada mes
                                 CountryCovidData(
                                     country = covidDataList[0].country,
                                     region = covidDataList[0].region,
-                                    cases = mapOf(date to caseData)
+                                    cases = mapOf(month to CaseData(total = totalCases, newCases = newCases))
                                 )
-                            })
+                            }
 
+                            countryCovidDataList.clear()
+                            countryCovidDataList.addAll(monthlyData)
                             adapter.notifyDataSetChanged()
                             Log.d("MainCovidActivity", "Datos cargados en RecyclerView")
                         } else {
